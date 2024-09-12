@@ -32,7 +32,6 @@ function grupnaFaza(){
         }
     }
 }
-
 function sesir(){
     let redosledEkipa = [];
     for(let grupa of Object.values(grupe)){
@@ -51,7 +50,6 @@ function sesir(){
     console.log("Šešir F:\n  "+f[0]['Team']+"\n  "+f[1]['Team']+"\nŠešir G:\n  "+g[0]['Team']+"\n  "+g[1]['Team']+"\n");
     return [d,e,f,g]; //ovi podaci idu u eliminacionu fazu..
 }
-
 function eliminacionaFaza([d,e,f,g]){ //uvrnut deo razbacan.. al' radi posao :D
     let elimfaza = {četvrtfinale:[],polufinale:[],"borba za treće mesto":[],finale:[]};
     //metoda niza .sort() sortira niz i vraca nazad, uz pomoc slucajnog broja, po sesiru, tako sto sam dao 50% sanse da bude na prvom mestu u nizu iz sesira ili na drugom mestu, potom .map() vraca konacno nazad u niz izmene..Da se ispostuje nasumicna selekcija ekipa..
