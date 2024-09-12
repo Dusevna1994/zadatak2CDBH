@@ -1,8 +1,7 @@
 const fs = require('fs');
 let grupe = citajIzDatoteke('groups.json');
 grupnaFaza();
-let [d,e,f,g] = sesir();  
-eliminacionaFaza(d,e,f,g);
+eliminacionaFaza(sesir());
 
 function grupnaFaza(){
     //kreiranje objekta raspored u koji ce se smestiti rezultati utakmica po kolima i grupama
@@ -36,10 +35,11 @@ function grupnaFaza(){
 
 function sesir(){
     let redosledEkipa = [];
-    for(let grupa of Object.values(grupe))
-        for(let ekipa of grupa)
+    for(let grupa of Object.values(grupe)){
+        for(let ekipa of grupa){
             redosledEkipa.push(ekipa);
-    
+        }
+    }
     redosledEkipa.sort(function(a,b){
         return a.olimpijada.bodovi>b.olimpijada.bodovi?-1:a.olimpijada.bodovi===b.olimpijada.bodovi?(a.olimpijada.kosRazlika>b.olimpijada.kosRazlika?-1:(a.olimpijada.kosRazlika===b.olimpijada.kosRazlika?(a.olimpijada.postignutiPoeni>=b.olimpijada.postignutiPoeni?-1:1):1)):1;
     });
@@ -52,6 +52,42 @@ function sesir(){
     return [d,e,f,g];
 }
 
+function eliminacionaFaza([d,e,f,g]){
+    let elimfaza = {četvrtfinale:[],polufinale:[],"borba za treće mesto":[],finale:[]};
+    let prvo,drugo,trece;
+    //metoda niza .sort() sortira niz i vraca nazad, uz pomoc slucajnog broja, po sesiru, tako sto sam dao 50% sanse da bude na prvom mestu u nizu iz sesira ili na drugom mestu, potom .map() vraca konacno nazad u niz izmene..Da se ispostuje nasumicna selekcija ekipa..
+    [d,e,f,g].map(x=>x.sort((a,b)=>Math.random()-0.5)); 
+    //CETVRT FINALE -> prethodno gde je metoda map i sort sam pomesao da bude nasumice odredjeno ko ce s'kim da igra, e sad proveravam da li su slucajno timovi prethodno igrali u grupnoj fazi, ako jesu igrace sa drugom ekipom iz sesira..
+    let dg = !(d[0].olimpijada.protivnici.find(x=>x['Opponent']===g[0]['Team']))?(!(d[1].olimpijada.protivnici.find(x=>x['Opponent']===g[1]['Team']))?cfpf([[d[0],g[0]],[d[1],g[1]]],elimfaza['četvrtfinale']):cfpf([[d[0],g[1]],[d[1],g[0]]],elimfaza['četvrtfinale'])):((d[0].olimpijada.protivnici.find(x=>x['Opponent']===g[1]['Team']))?cfpf([[d[1],g[0]],[d[0],g[1]]],elimfaza['četvrtfinale']):cfpf([[d[0],g[1]],[d[1],g[0]]],elimfaza['četvrtfinale']));
+    let ef = !(e[0].olimpijada.protivnici.find(x=>x['Opponent']===f[0]['Team']))?(!(e[1].olimpijada.protivnici.find(x=>x['Opponent']===f[1]['Team']))?cfpf([[e[0],f[0]],[e[1],f[1]]],elimfaza['četvrtfinale']):cfpf([[e[0],f[1]],[e[1],f[0]]],elimfaza['četvrtfinale'])):((e[0].olimpijada.protivnici.find(x=>x['Opponent']===f[1]['Team']))?cfpf([[e[1],f[0]],[e[0],f[1]]],elimfaza['četvrtfinale']):cfpf([[e[0],f[1]],[e[1],f[0]]],elimfaza['četvrtfinale']));
+    //POLU FINALE
+    dg.sort((a,b)=>Math.random()-0.5); ef.sort((a,b)=>Math.random()-0.5); //opet miksujem da bude nasumice 50% sanse za broj 0> ili <0..
+    let finalisti = cfpf([[dg[0],ef[0]],[dg[1],ef[1]]],elimfaza['polufinale']); //odredio sam finaliste
+    let treceMesto = [...dg,...ef].filter(tim2=>!finalisti.some(tim1=>tim1['Team']===tim2['Team'])); 
+    //odredio sam borbu za trece mesto
+    //e sad jos da se odigraju ta dva meca i prikazem sve rezultate i medalje i gotovo!
+    console.log("FINALISTI");
+    console.log(finalisti);
+    console.log("ZA BRONZU");
+    console.log(treceMesto);
+}
+function cfpf(parovi,faza){ //cfpf predstavlja cetvrtfinale/polufinale, nisam imao ideju za bolji naziv :)
+    let timovi = []; //ekipe koje idu dalje se smestaju u ovaj niz 
+    for(let par of parovi){
+        faza.push(utakmica(par[0],par[1])); //ovde se pokrece funkcija koja vraca rezultat koji se smesta u aktuelnu fazu, i azuriraju se timovi
+        timovi.push(pobednik(par[0],par[1])); //funkcija koja vraca pobednika, odnosno ekipu sa boljim rezultatom u mecu
+    }
+    return timovi;  //vracam pobednike (u prom. lg ili dg sve zavisi iz koje linije je pozvana f-ja)
+}
+function pobednik(tim1,tim2){
+    let protivnici = tim1.olimpijada.protivnici;  //-> odakle cu u ovoj liniji koda da izvucem rezultat posto je azurirana ekipa u poslednji niz svojstva protivnici..
+    let rezultat = protivnici[protivnici.length-1]['Result'].split("-"); //razdvajam string dakle rezultat1 - rezultat2, rezultat 1 pripada prvoj ekipi iz koje izvlacim rezultat, drugi rez drugoj ekipi
+    if(parseInt(rezultat[0])>parseInt(rezultat[1])){  //konverzija stringa u integer
+        return tim1;    //ukoliko je prvi rezultat veci on pripada prvoj ekipi i to znaci da je pobedila ta ekipa i ide dalje
+    }else{
+        return tim2;    //u suprotnom znaci da je pobedila druga ekipa..
+    }
+}
 function utakmica(e1,e2){
     let rez1 = svojstvaIRezultat(e1,e2['FIBARanking']);
     let rez2 = svojstvaIRezultat(e2,e1['FIBARanking']);
@@ -110,10 +146,10 @@ function pripremneUtakmice(tim){
     }                          //vraca sva svojstva 
     return {prosecanBrojPoena: parseFloat((postignutiPoeni/2).toFixed(2)),forma: parseFloat((pobede/2*1).toFixed(2))};
 }
-function olimpijada(){
+function olimpijada(){ //"kostur" koji se dodeljuje svakom ekipi
     return {bodovi:0,pobede:0,porazi:0,postignutiPoeni:0,primljeniPoeni:0,prosecanBrojPoena:0.0,kosRazlika:0,protivnici:[],forma:0};
 }
-function citajIzDatoteke(putanja){
+function citajIzDatoteke(putanja){ //cita iz datoteka koje ste prilozili .json i konvertuje u js obj.
     return JSON.parse(fs.readFileSync(putanja,'utf-8'));
 }
 
