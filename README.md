@@ -1,0 +1,3 @@
+-Ažurirana verzija simulacije turnira, radi apsolutno sve sto je zahtevano
+-Pokretanje simulacije u terminalu komandom: npm start
+-NODE v20.17.0
