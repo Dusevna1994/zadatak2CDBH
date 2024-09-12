@@ -48,28 +48,31 @@ function sesir(){
     let f = redosledEkipa.slice(4,6);
     let g = redosledEkipa.slice(6,8);
     console.log("\nEliminaciona faza (šeširi):\nŠešir D:\n  "+d[0]['Team']+"\n  "+d[1]['Team']+"\nŠešir E:\n  "+e[0]['Team']+"\n  "+e[1]['Team']);
-    console.log("Šešir F:\n  "+f[0]['Team']+"\n  "+f[1]['Team']+"\nŠešir G:\n  "+g[0]['Team']+"\n  "+g[1]['Team']);
+    console.log("Šešir F:\n  "+f[0]['Team']+"\n  "+f[1]['Team']+"\nŠešir G:\n  "+g[0]['Team']+"\n  "+g[1]['Team']+"\n");
     return [d,e,f,g];
 }
 
 function eliminacionaFaza([d,e,f,g]){
     let elimfaza = {četvrtfinale:[],polufinale:[],"borba za treće mesto":[],finale:[]};
-    let prvo,drugo,trece;
     //metoda niza .sort() sortira niz i vraca nazad, uz pomoc slucajnog broja, po sesiru, tako sto sam dao 50% sanse da bude na prvom mestu u nizu iz sesira ili na drugom mestu, potom .map() vraca konacno nazad u niz izmene..Da se ispostuje nasumicna selekcija ekipa..
-    [d,e,f,g].map(x=>x.sort((a,b)=>Math.random()-0.5)); 
+    [d,e,f,g].map(x=>x.sort((a,b)=>Math.random()-0.5)); //najkraci put za tako nesto :)
     //CETVRT FINALE -> prethodno gde je metoda map i sort sam pomesao da bude nasumice odredjeno ko ce s'kim da igra, e sad proveravam da li su slucajno timovi prethodno igrali u grupnoj fazi, ako jesu igrace sa drugom ekipom iz sesira..
     let dg = !(d[0].olimpijada.protivnici.find(x=>x['Opponent']===g[0]['Team']))?(!(d[1].olimpijada.protivnici.find(x=>x['Opponent']===g[1]['Team']))?cfpf([[d[0],g[0]],[d[1],g[1]]],elimfaza['četvrtfinale']):cfpf([[d[0],g[1]],[d[1],g[0]]],elimfaza['četvrtfinale'])):((d[0].olimpijada.protivnici.find(x=>x['Opponent']===g[1]['Team']))?cfpf([[d[1],g[0]],[d[0],g[1]]],elimfaza['četvrtfinale']):cfpf([[d[0],g[1]],[d[1],g[0]]],elimfaza['četvrtfinale']));
     let ef = !(e[0].olimpijada.protivnici.find(x=>x['Opponent']===f[0]['Team']))?(!(e[1].olimpijada.protivnici.find(x=>x['Opponent']===f[1]['Team']))?cfpf([[e[0],f[0]],[e[1],f[1]]],elimfaza['četvrtfinale']):cfpf([[e[0],f[1]],[e[1],f[0]]],elimfaza['četvrtfinale'])):((e[0].olimpijada.protivnici.find(x=>x['Opponent']===f[1]['Team']))?cfpf([[e[1],f[0]],[e[0],f[1]]],elimfaza['četvrtfinale']):cfpf([[e[0],f[1]],[e[1],f[0]]],elimfaza['četvrtfinale']));
     //POLU FINALE
-    dg.sort((a,b)=>Math.random()-0.5); ef.sort((a,b)=>Math.random()-0.5); //opet miksujem da bude nasumice 50% sanse za broj 0> ili <0..
+    dg.sort((a,b)=>Math.random()-0.5); ef.sort((a,b)=>Math.random()-0.5); //opet miksujem da bude nasumice 50% sanse za broj 0> ili <0.. 
     let finalisti = cfpf([[dg[0],ef[0]],[dg[1],ef[1]]],elimfaza['polufinale']); //odredio sam finaliste
-    let treceMesto = [...dg,...ef].filter(tim2=>!finalisti.some(tim1=>tim1['Team']===tim2['Team'])); 
-    //odredio sam borbu za trece mesto
-    //e sad jos da se odigraju ta dva meca i prikazem sve rezultate i medalje i gotovo!
-    console.log("FINALISTI");
-    console.log(finalisti);
-    console.log("ZA BRONZU");
-    console.log(treceMesto);
+    let [timB1,timB2] = [...dg,...ef].filter(tim2=>!finalisti.some(tim1=>tim1['Team']===tim2['Team'])); //izvlace se svi sto se ne podudaraju sa finalistima, tj. porazeni u polufinalu i oni se bore za 3. mesto, metodu niza .some() koristim jer za jedno podudaranje vraca true, za razliku od .every()
+    let [timF1,timF2] = finalisti; //izdvajanje na pojedinacno iz niza (destrukturisanje)
+    elimfaza["borba za treće mesto"].push(utakmica(timB1,timB2));
+    let trece = pobednik(timB1,timB2);
+    elimfaza['finale'].push(utakmica(timF1,timF2));
+    let prvo = pobednik(timF1,timF2);
+    let drugo = finalisti.find(tim=>prvo['Team']!==tim['Team']); //koristim find da prondaje porazenog iz finala, jer ce za razliku od .filter() koji vraca niz, ovaj vratiti doslovni obj.
+    //prikazujem sad sve meceve koji su se odigrali u elminacionij fazi
+    rezultati(elimfaza);
+    //i konacno medalje :)
+    console.log("\nMEDALJE\n1. mesto: "+prvo['Team']+" (zlato)"+"\n2. mesto: "+drugo['Team']+" (srebro)"+"\n3. mesto: "+trece['Team']+" (bronza)");
 }
 function cfpf(parovi,faza){ //cfpf predstavlja cetvrtfinale/polufinale, nisam imao ideju za bolji naziv :)
     let timovi = []; //ekipe koje idu dalje se smestaju u ovaj niz 
