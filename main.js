@@ -1,18 +1,18 @@
-const fs = require('fs');
-let grupe = citajIzDatoteke('groups.json');
-grupnaFaza();
-eliminacionaFaza(sesir());
+const fs = require('fs'); //file stream modul kako bi citao iz datoteka
+const grupe = citajIzDatoteke('groups.json'); //citam podatke iz datoteke, mozda nisam morao globalno da smestam promenljivu..
+grupnaFaza(); //poziv
+eliminacionaFaza(sesir()); //poziv (kada se izvrsi sesir() (sesir vraca rezultate koji dalje idu u eliminacionaFaza())
 
 function grupnaFaza(){
     //kreiranje objekta raspored u koji ce se smestiti rezultati utakmica po kolima i grupama
     let raspored = {"I kolo":{},"II kolo":{},"III kolo":{}};
     for(const grupa in grupe){
-        const ekipe = grupe[grupa];
-        raspored["I kolo"]["Grupa "+grupa+":"] = [utakmica(ekipe[0],ekipe[1]),utakmica(ekipe[2],ekipe[3])];
+        const ekipe = grupe[grupa];         //izvlaci grupu 
+        raspored["I kolo"]["Grupa "+grupa+":"] = [utakmica(ekipe[0],ekipe[1]),utakmica(ekipe[2],ekipe[3])]; //rezultati meceva se smestaju u niz po kolu i grupi
         raspored["II kolo"]["Grupa "+grupa+":"] = [utakmica(ekipe[2],ekipe[0]),utakmica(ekipe[1],ekipe[3])];
         raspored["III kolo"]["Grupa "+grupa+":"] = [utakmica(ekipe[1],ekipe[2]),utakmica(ekipe[3],ekipe[0])];
-        grupe[grupa].sort(function(a,b){
-            let rezultat = a.olimpijada.protivnici.find(x=>x['Opponent']===b['Team'])['Result'].split("-");
+        grupe[grupa].sort(function(a,b){    //koristim priliku da sortiram grupu, posto su se prethodno odigrale utakmice, i tako automatski dobijem plasman 1-4 u grupi
+            let rezultat = a.olimpijada.protivnici.find(x=>x['Opponent']===b['Team'])['Result'].split("-"); //ovde izvlacim rezultat iz medjusobnog duela. -Linija koda ispod: poredjenja po bodovima, ako imaju isti broj bodova, onda poredim pobednika iz medjusobnog duela, ako je i to ispalo jednako, onda kos razlika
             return a.olimpijada.bodovi>b.olimpijada.bodovi?-1:a.olimpijada.bodovi===b.olimpijada.bodovi?(parseInt(rezultat[0])>parseInt(rezultat[1])?-1:(parseInt(rezultat[0])===parseInt(rezultat[1])?(a.olimpijada.kosRazlika>=b.olimpijada.kosRazlika?-1:1):1)):1;
         });
     }
@@ -37,22 +37,22 @@ function sesir(){
     let redosledEkipa = [];
     for(let grupa of Object.values(grupe)){
         for(let ekipa of grupa){
-            redosledEkipa.push(ekipa);
+            redosledEkipa.push(ekipa); //sve ekipe na olimp. smestam u jedan niz koji cu potom da sortiram po odredjenim kriterijumima (kod ispod)
         }
     }
-    redosledEkipa.sort(function(a,b){
+    redosledEkipa.sort(function(a,b){   //ekipe se sortiraju po bodovima, ako imaju iste bodove kos razlika, ako i taj podatak imaju isti onda po postignutim poenima, ako je i to slucajno jednako (0.1% sanse :D), onda se nista ne menja
         return a.olimpijada.bodovi>b.olimpijada.bodovi?-1:a.olimpijada.bodovi===b.olimpijada.bodovi?(a.olimpijada.kosRazlika>b.olimpijada.kosRazlika?-1:(a.olimpijada.kosRazlika===b.olimpijada.kosRazlika?(a.olimpijada.postignutiPoeni>=b.olimpijada.postignutiPoeni?-1:1):1)):1;
     });
-    let d = redosledEkipa.slice(0,2);
-    let e = redosledEkipa.slice(2,4);
-    let f = redosledEkipa.slice(4,6);
-    let g = redosledEkipa.slice(6,8);
-    console.log("\nEliminaciona faza (šeširi):\nŠešir D:\n  "+d[0]['Team']+"\n  "+d[1]['Team']+"\nŠešir E:\n  "+e[0]['Team']+"\n  "+e[1]['Team']);
+    let d = redosledEkipa.slice(0,2); //izdvajam prve dve najbolje ekipe i smestam u sesir d, u nastavku isto tako za sve ostale sesire..
+    let e = redosledEkipa.slice(2,4); //3 i 4 ekipa
+    let f = redosledEkipa.slice(4,6); //5 i 6 ek.
+    let g = redosledEkipa.slice(6,8); //7 i 8 ek.
+    console.log("\nEliminaciona faza (šeširi):\nŠešir D:\n  "+d[0]['Team']+"\n  "+d[1]['Team']+"\nŠešir E:\n  "+e[0]['Team']+"\n  "+e[1]['Team']); //prikazujem sesire
     console.log("Šešir F:\n  "+f[0]['Team']+"\n  "+f[1]['Team']+"\nŠešir G:\n  "+g[0]['Team']+"\n  "+g[1]['Team']+"\n");
-    return [d,e,f,g];
+    return [d,e,f,g]; //ovi podaci idu u eliminacionu fazu..
 }
 
-function eliminacionaFaza([d,e,f,g]){
+function eliminacionaFaza([d,e,f,g]){ //uvrnut deo razbacan.. al' radi posao :D
     let elimfaza = {četvrtfinale:[],polufinale:[],"borba za treće mesto":[],finale:[]};
     //metoda niza .sort() sortira niz i vraca nazad, uz pomoc slucajnog broja, po sesiru, tako sto sam dao 50% sanse da bude na prvom mestu u nizu iz sesira ili na drugom mestu, potom .map() vraca konacno nazad u niz izmene..Da se ispostuje nasumicna selekcija ekipa..
     [d,e,f,g].map(x=>x.sort((a,b)=>Math.random()-0.5)); //najkraci put za tako nesto :)
@@ -92,28 +92,28 @@ function pobednik(tim1,tim2){
     }
 }
 function utakmica(e1,e2){
-    let rez1 = svojstvaIRezultat(e1,e2['FIBARanking']);
+    let rez1 = svojstvaIRezultat(e1,e2['FIBARanking']); //koristim rank protivnika za kalkulaciju rezultata u utakmici, isto vazi za red ispod
     let rez2 = svojstvaIRezultat(e2,e1['FIBARanking']);
-    azuriraj(e1.olimpijada,rez1,rez2,e2['Team']);
+    azuriraj(e1.olimpijada,rez1,rez2,e2['Team']);   //azuriranje informacija nakon utakmice po ekipi (takodje za kod ispod duplirano :( )
     azuriraj(e2.olimpijada,rez2,rez1,e1['Team']);
-    return e1['Team']+"-"+e2['Team']+" "+"["+rez1+":"+rez2+"]";
+    return e1['Team']+"-"+e2['Team']+" "+"["+rez1+":"+rez2+"]"; //vraca rezultat
 }
 function svojstvaIRezultat(e,rankProtivnika){
-    let eLista;
+    let eLista;                 //ova citava funkcija :D, sluzi da ako ekipe nemaju informacije sa olimpijade bodove,rezultate itd., da ucita podatke sa pripremnih utakmica (najvaznije za I kolo grupne faze, posle totalno bespotrebno ali ce svakako prolaziti tu)
     if(e.olimpijada){
         eLista = e.olimpijada;
     }else{
         eLista = pripremneUtakmice(e['ISOCode']);
         e.olimpijada = olimpijada();
     }
-    return Math.floor(randomBroj()*eLista.prosecanBrojPoena+(eLista.forma*rankProtivnika));
+    return Math.floor(randomBroj()*eLista.prosecanBrojPoena+(eLista.forma*rankProtivnika)); //e ovde se desava cudo :D u nazivu svojstava se moze primetiti sta se kalkulise 
 }
 function randomBroj(){
     let poeni;
     while((poeni=Math.random())<0.8);  //postavio sam ovde da broj moze biti izmedju 0.8 i 1, iz razloga sto izbacuje "najrealnije" rezultate, sa ovim proracunom koje sam napravio u svojstvaIRezultat() :D
-    return poeni;                       //0.8+0.1 kad budem odredjivao zreb
+    return poeni;                      
 }
-function azuriraj(t,postignutiPoeni,primljeniPoeni,protivnik){
+function azuriraj(t,postignutiPoeni,primljeniPoeni,protivnik){ //upisivanje informacija timovima nakon utakmice (rezultati,forma itd.)
     if(postignutiPoeni>primljeniPoeni){  //ukoliko je pobedila prva ekipa 
         t.bodovi+=2;    //2 boda za pobedu prvoj ekipi
         t.pobede++;     //dodaje se broj pobeda
@@ -126,7 +126,7 @@ function azuriraj(t,postignutiPoeni,primljeniPoeni,protivnik){
     t.prosecanBrojPoena=parseFloat((t.postignutiPoeni/(t.pobede+t.porazi)).toFixed(2));
     t.kosRazlika = t.postignutiPoeni-t.primljeniPoeni;
     t.protivnici.push({Opponent:protivnik,Result:postignutiPoeni+"-"+primljeniPoeni});
-    t.forma = parseFloat((t.pobede/(t.pobede+t.porazi)*1).toFixed(2));
+    t.forma = parseFloat((t.pobede/(t.pobede+t.porazi)*1).toFixed(2));  //ovako mi palo napamet da racunam formu :D, nisam smislio nista bolje..
 }
 function rezultati(grupe){
     for(let grupa in grupe){
@@ -136,7 +136,7 @@ function rezultati(grupe){
         }
     }
 }
-function pripremneUtakmice(tim){
+function pripremneUtakmice(tim){ //ova funkcija sluzi da procita podatke u pripremnim utakmicama po ekipi koja se prosledi f-ji, sluzice mi informacije iz priprema za I kolo, kada pocinju olimpijske igre
     const pripremneUtakmice = citajIzDatoteke('exibitions.json'); //cita se fajl i dodeljuje se promenljivoj
     let pobede = 0,postignutiPoeni = 0;
     for(let mec of pripremneUtakmice[tim]){                   //da bi se procitala tacna reprezentacija koja se trazi, dodeljuje se ISOCode (tim) i prolazi se kroz sva svojstva koja poseduje trazena reprezentacija
